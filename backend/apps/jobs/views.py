@@ -1,6 +1,15 @@
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
+from .models import JobApplication
+from .serializers import JobApplicationSerializer
 
-@api_view(["GET"])
-def health_check(request):
-    return Response({"status": "ok"})
+
+class JobApplicationViewSet(ModelViewSet):
+    serializer_class = JobApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return JobApplication.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

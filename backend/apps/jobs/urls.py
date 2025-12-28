@@ -1,6 +1,7 @@
-from django.urls import path
-from .views import health_check
+from rest_framework.routers import DefaultRouter
+from .views import JobApplicationViewSet
 
-urlpatterns = [
-    path("health/", health_check),
-]
+router = DefaultRouter()
+router.register(r"", JobApplicationViewSet, basename="jobs")
+
+urlpatterns = router.urls
