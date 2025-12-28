@@ -3,3 +3,5 @@ __pycache__/
 node_modules/
 *.pyc
 .db
+.vscode/shortcuts.json
+.vscode/settings.json
