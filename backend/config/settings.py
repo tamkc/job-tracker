@@ -83,9 +83,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DATABASE_NAME", "jobtracker"),
-        "USER": os.getenv("DATABASE_USER", "jobtracker"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD", "jobtracker"),
+        "NAME": os.getenv("POSTGRES_DB", "jobtracker"),
+        "USER": os.getenv("POSTGRES_USER", "jobtracker"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "jobtracker"),
         "HOST": os.getenv("DATABASE_HOST", "db"),
         "PORT": os.getenv("DATABASE_PORT", 5432),
     }
