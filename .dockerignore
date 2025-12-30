@@ -1,0 +1,30 @@
+# Node
+**/node_modules
+**/frontend/.next
+**/frontend/out
+**/frontend/build
+.npm
+**/.DS_Store
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/env
+**/venv
+**/.env
+
+# Version Control
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# IDEs
+.vscode
+.idea

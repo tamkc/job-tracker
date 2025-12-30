@@ -9,12 +9,19 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_NAME: ${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
 
   db:
     image: postgres:16
     environment:
-      POSTGRES_DB: jobtracker
-      POSTGRES_USER: jobtracker
-      POSTGRES_PASSWORD: jobtracker
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
