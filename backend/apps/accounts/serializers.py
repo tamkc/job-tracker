@@ -23,8 +23,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "linkedin_url",
             "portfolio_url",
             "avatar",
-            "notification_email_updates",
-            "notification_job_alerts",
         ]
 
     def update(self, instance, validated_data):
@@ -53,7 +51,6 @@ class ChangePasswordSerializer(serializers.Serializer):
                 {"new_password": "Password fields didn't match."}
             )
         return attrs
-
 
 
 class ResumeSerializer(serializers.ModelSerializer):
