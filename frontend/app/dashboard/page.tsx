@@ -32,10 +32,12 @@ export default function DashboardPage() {
     error,
   } = useQuery<Job[]>({
     queryKey: ["jobs"],
+
     queryFn: async () => {
-      const res = await axiosAuth.get("http://localhost:8000/api/jobs/");
+      const res = await axiosAuth.get("/jobs/");
       return res.data;
     },
+
     enabled: !!session,
   });
 

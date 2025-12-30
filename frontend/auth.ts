@@ -12,14 +12,14 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          const res = await axios.post("http://localhost:8000/api/auth/login/", {
+          const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login/`, {
             username: credentials?.username,
             password: credentials?.password,
           });
 
           const user = res.data;
 
-          if (user && user.access) {
+          if (user?.access) {
             return {
               id: credentials?.username as string,
               name: credentials?.username as string,
