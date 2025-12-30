@@ -125,12 +125,20 @@ export default function DashboardPage() {
               Welcome back, {session?.user?.name}
             </p>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-sm text-red-600 hover:text-red-700 font-medium px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            Sign Out
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => router.push("/dashboard/profile")}
+              className="text-sm font-medium px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+            >
+              Profile
+            </button>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-sm text-red-600 hover:text-red-700 font-medium px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {renderContent()}
