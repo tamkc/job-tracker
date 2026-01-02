@@ -26,6 +26,7 @@ class JobApplication(models.Model):
         default=Status.APPLIED,
     )
 
+    source = models.CharField(max_length=100, blank=True)
     application_date = models.DateField()
     salary_min = models.IntegerField(null=True, blank=True)
     salary_max = models.IntegerField(null=True, blank=True)
@@ -35,6 +36,9 @@ class JobApplication(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
 
     def __str__(self):
         return f"{self.company_name} - {self.job_title}"
