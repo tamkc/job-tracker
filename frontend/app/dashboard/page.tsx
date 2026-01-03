@@ -1,23 +1,22 @@
 "use client";
 
 import useAxiosAuth from "@/hooks/useAxiosAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-interface Job {
-  id: string;
-  company_name: string;
-  job_title: string;
-  status: string;
-  location: string;
-}
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import Link from "next/link";
+import { Pencil, Trash2, Plus } from "lucide-react";
+import { Job, JobListSchema } from "@/lib/schemas";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const axiosAuth = useAxiosAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -32,13 +31,32 @@ export default function DashboardPage() {
     error,
   } = useQuery<Job[]>({
     queryKey: ["jobs"],
-
     queryFn: async () => {
       const res = await axiosAuth.get("/jobs/");
-      return res.data;
+      // Validate response with Zod Schema
+      return JobListSchema.parse(res.data);
     },
-
     enabled: !!session,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await axiosAuth.delete(`/jobs/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      toast({
+        title: "Application deleted",
+        description: "The job application has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete application.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (status === "loading")
@@ -68,9 +86,11 @@ export default function DashboardPage() {
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Start tracking your job search today.
           </p>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            Add First Application
-          </button>
+          <Link href="/dashboard/jobs/new">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Add First Application
+            </Button>
+          </Link>
         </div>
       );
     }
@@ -82,7 +102,10 @@ export default function DashboardPage() {
             className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
           >
             <div className="flex justify-between items-start">
-              <div>
+              <div
+                className="cursor-pointer"
+                onClick={() => router.push(`/dashboard/jobs/${job.id}/edit`)}
+              >
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {job.company_name}
                 </h2>
@@ -93,19 +116,47 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-500 mt-1">{job.location}</p>
                 )}
               </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                  job.status === "OFFER"
-                    ? "bg-green-100 text-green-700 border-green-200"
-                    : job.status === "REJECTED"
-                    ? "bg-red-100 text-red-700 border-red-200"
-                    : job.status === "INTERVIEW"
-                    ? "bg-purple-100 text-purple-700 border-purple-200"
-                    : "bg-blue-50 text-blue-700 border-blue-100"
-                }`}
-              >
-                {job.status}
-              </span>
+              <div className="flex flex-col items-end gap-3">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                    job.status === "OFFER"
+                      ? "bg-green-100 text-green-700 border-green-200"
+                      : job.status === "REJECTED"
+                      ? "bg-red-100 text-red-700 border-red-200"
+                      : job.status === "INTERVIEW"
+                      ? "bg-purple-100 text-purple-700 border-purple-200"
+                      : "bg-blue-50 text-blue-700 border-blue-100"
+                  }`}
+                >
+                  {job.status}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      router.push(`/dashboard/jobs/${job.id}/edit`)
+                    }
+                  >
+                    <Pencil className="h-4 w-4 text-gray-500 hover:text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "Are you sure you want to delete this application?"
+                        )
+                      ) {
+                        deleteMutation.mutate(job.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -126,18 +177,25 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-4">
-            <button
+            <Link href="/dashboard/jobs/new">
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Application
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
               onClick={() => router.push("/dashboard/profile")}
-              className="text-sm font-medium px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
             >
               Profile
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-sm text-red-600 hover:text-red-700 font-medium px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
             >
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
 

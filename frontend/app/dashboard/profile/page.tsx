@@ -20,7 +20,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, FileText, Trash2, Download } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Resume, ResumeListSchema, UserProfileSchema } from "@/lib/schemas";
 
 const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -52,10 +54,12 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function ProfilePage() {
   const axiosAuth = useAxiosAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -73,11 +77,14 @@ export default function ProfilePage() {
     resolver: zodResolver(passwordSchema),
   });
 
+  // Fetch Profile Data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await axiosAuth.get("/auth/profile/");
-        const data = res.data;
+        // Validate with DTO Schema
+        const data = UserProfileSchema.parse(res.data);
+        
         form.reset({
           first_name: data.first_name,
           last_name: data.last_name,
@@ -92,6 +99,7 @@ export default function ProfilePage() {
           setAvatarPreview(data.avatar);
         }
       } catch (error) {
+        console.error("Profile fetch error:", error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -105,6 +113,55 @@ export default function ProfilePage() {
     fetchProfile();
   }, [axiosAuth, form, toast]);
 
+  // Resumes Query
+  const { data: resumes, isLoading: resumesLoading } = useQuery<Resume[]>({
+    queryKey: ["resumes"],
+    queryFn: async () => {
+      const res = await axiosAuth.get("/auth/resumes/");
+      return ResumeListSchema.parse(res.data);
+    },
+  });
+
+  // Resume Mutation
+  const uploadResumeMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return axiosAuth.post("/auth/resumes/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resumes"] });
+      setResumeFile(null);
+      toast({ title: "Resume uploaded successfully" });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload resume.",
+      });
+    },
+  });
+
+  const deleteResumeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return axiosAuth.delete(`/auth/resumes/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resumes"] });
+      toast({ title: "Resume deleted" });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete resume.",
+      });
+    },
+  });
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -114,6 +171,12 @@ export default function ProfilePage() {
         setAvatarPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResumeUpload = () => {
+    if (resumeFile) {
+      uploadResumeMutation.mutate(resumeFile);
     }
   };
 
@@ -324,31 +387,84 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Notifications</h3>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Email Updates</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive emails about your account activity.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Job Alerts</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive notifications about new job matches.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <Button type="submit" disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Resumes Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumes</CardTitle>
+            <CardDescription>Manage your uploaded resumes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+              />
+              <Button
+                onClick={handleResumeUpload}
+                disabled={!resumeFile || uploadResumeMutation.isPending}
+              >
+                {uploadResumeMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Upload
+              </Button>
+            </div>
+
+            <div className="space-y-2 mt-4">
+              {resumesLoading && (
+                <p className="text-sm text-gray-500">Loading resumes...</p>
+              )}
+              {resumes?.length === 0 && (
+                <p className="text-sm text-gray-500">No resumes uploaded.</p>
+              )}
+              {resumes?.map((resume) => (
+                <div
+                  key={resume.id}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="font-medium text-sm">{resume.filename}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(resume.uploaded_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={resume.file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="ghost" size="icon">
+                        <Download className="h-4 w-4 text-gray-500" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm("Delete this resume?")) {
+                          deleteResumeMutation.mutate(resume.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
