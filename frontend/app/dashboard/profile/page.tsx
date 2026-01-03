@@ -57,8 +57,6 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const form = useForm<ProfileFormValues>({
@@ -95,9 +93,6 @@ export default function ProfilePage() {
           linkedin_url: data.linkedin_url || "",
           portfolio_url: data.portfolio_url || "",
         });
-        if (data.avatar) {
-          setAvatarPreview(data.avatar);
-        }
       } catch (error) {
         console.error("Profile fetch error:", error);
         toast({
@@ -162,18 +157,6 @@ export default function ProfilePage() {
     },
   });
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleResumeUpload = () => {
     if (resumeFile) {
       uploadResumeMutation.mutate(resumeFile);
@@ -190,10 +173,6 @@ export default function ProfilePage() {
       formData.append("phone_number", data.phone_number || "");
       formData.append("linkedin_url", data.linkedin_url || "");
       formData.append("portfolio_url", data.portfolio_url || "");
-
-      if (avatarFile) {
-        formData.append("avatar", avatarFile);
-      }
 
       const res = await axiosAuth.put("/auth/profile/", formData, {
         headers: {
@@ -213,10 +192,6 @@ export default function ProfilePage() {
         linkedin_url: updatedData.linkedin_url || "",
         portfolio_url: updatedData.portfolio_url || "",
       });
-      if (updatedData.avatar) {
-        setAvatarPreview(updatedData.avatar);
-      }
-      setAvatarFile(null);
 
       toast({
         title: "Profile updated",
@@ -284,35 +259,6 @@ export default function ProfilePage() {
               onSubmit={form.handleSubmit(onSubmitProfile)}
               className="space-y-6"
             >
-              {/* Avatar Section */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={avatarPreview || ""} />
-                  <AvatarFallback>
-                    {form.getValues("first_name")?.[0]}
-                    {form.getValues("last_name")?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  <Label htmlFor="avatar" className="cursor-pointer">
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                      <Upload className="h-4 w-4" />
-                      Change Avatar
-                    </div>
-                  </Label>
-                  <Input
-                    id="avatar"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                  <p className="text-[0.8rem] text-muted-foreground">
-                    JPG, GIF or PNG. Max 2MB.
-                  </p>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name</Label>

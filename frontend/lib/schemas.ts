@@ -45,7 +45,6 @@ export const UserProfileSchema = z.object({
   phone_number: z.string().optional().nullable(),
   linkedin_url: z.string().url().optional().or(z.literal("")).nullable(),
   portfolio_url: z.string().url().optional().or(z.literal("")).nullable(),
-  avatar: z.string().nullable().optional(),
 });
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
