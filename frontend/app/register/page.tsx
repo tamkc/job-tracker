@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const registerSchema = z
   .object({
@@ -162,6 +163,7 @@ export default function RegisterPage() {
               )}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
